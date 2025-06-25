@@ -26663,6 +26663,15 @@ function renderStocks() {
 
 // 初回データ読み込み
 fetchStockData();
+
+function deleteStock(index) {
+  const stockList = JSON.parse(localStorage.getItem("myStockList") || "[]");
+  if (index >= 0 && index < stockList.length) {
+    stockList.splice(index, 1);
+    localStorage.setItem("myStockList", JSON.stringify(stockList));
+    renderStocks();
+  }
+}
 </script>
 </body>
 </html>
