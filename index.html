@@ -1,11 +1,56 @@
+
 <!DOCTYPE html>
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
   <title>株式管理ツール</title>
+  <style>
+    body { font-family: sans-serif; padding: 20px; }
+    input, button, label, select, datalist { margin: 5px; }
+    .table-wrapper {
+      overflow-x: auto;
+      margin-top: 20px;
+    }
+    table { border-collapse: collapse; min-width: 800px; width: 100%; }
+    th, td { border: 1px solid #ccc; padding: 8px; text-align: center; }
+    th { background-color: #f0f0f0; cursor: pointer; }
+    .profit { color: green; }
+    .loss { color: red; }
+  </style>
 </head>
 <body>
-<!-- HTML省略 -->
+
+<h3>株式管理ツール</h3>
+<div>
+  <input list="codeList" type="text" id="code" placeholder="銘柄コード (例: 7203.T)" oninput="validateCode(this)">
+  <datalist id="codeList"></datalist>
+  <input list="amountList" type="number" id="amount" placeholder="保有数" min="1">
+  <datalist id="amountList">
+    <script>
+      for (let i = 100; i <= 2000; i += 100) {
+        document.write(`<option value="${i}">`);
+      }
+    </script>
+  </datalist>
+  <input type="number" id="price" placeholder="取得単価 (円)">
+  <button onclick="addStock()">追加</button>
+  <br><br>
+  <input type="text" id="search" placeholder="🔍 銘柄検索" oninput="renderStocks()">
+  <br><br>
+  <button onclick="exportCSV()">📤 CSVエクスポート</button>
+  <input type="file" id="csvFile" accept=".csv" onchange="importCSV(event)">
+  <label for="csvFile">📥 CSVインポート</label>
+</div>
+
+<hr>
+
+<h3>保有銘柄一覧</h3>
+<div class="table-wrapper">
+  <div id="stockList"></div>
+</div>
+<div id="summary"></div>
+
+<!-- doGet()の結果を1日1回手動で貼り付けるJSONデータ -->
 <script id="stock-data-json" type="application/json">
 {
   "1301": {
@@ -26463,6 +26508,62 @@
     "price": 2033
   }
 }
+</script>
+
+<script>
+let currentSortKey = "";
+let currentSortOrder = "asc";
+let stockDataCache = null;
+
+function validateCode(input) {
+  input.value = input.value.toUpperCase().replace(/[^A-Z0-9.]/g, "");
+}
+
+function fetchStockData() {
+  try {
+    const rawJson = document.getElementById("stock-data-json").textContent;
+    stockDataCache = JSON.parse(rawJson);
+    const datalist = document.getElementById("codeList");
+    datalist.innerHTML = "";
+    for (const code in stockDataCache) {
+      const name = stockDataCache[code].name || "";
+      const option = document.createElement("option");
+      option.value = code;
+      option.text = `${code} - ${name}`;
+      datalist.appendChild(option);
+    }
+  } catch (e) {
+    alert("埋め込み株価データの読み込みに失敗しました。");
+  }
+}
+
+function addStock() {
+  const code = document.getElementById("code").value.trim().toUpperCase();
+  const amount = parseInt(document.getElementById("amount").value);
+  const price = parseFloat(document.getElementById("price").value);
+
+  if (!code || isNaN(amount) || isNaN(price)) {
+    alert("正しく入力してください。");
+    return;
+  }
+
+  if (!stockDataCache[code]) {
+    alert("銘柄コードが存在しません。");
+    return;
+  }
+
+  const stockList = JSON.parse(localStorage.getItem("myStockList") || "[]");
+  stockList.push({ code, amount, price });
+  localStorage.setItem("myStockList", JSON.stringify(stockList));
+
+  document.getElementById("code").value = "";
+  document.getElementById("amount").value = "";
+  document.getElementById("price").value = "";
+
+  renderStocks();
+}
+
+fetchStockData();
 </script>
 </body>
 </html>
