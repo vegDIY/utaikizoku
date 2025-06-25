@@ -1,7 +1,7 @@
 const fs = require('fs');
 const https = require('https');
 
-const DOGET_URL = 'https://script.google.com/macros/s/AKfycbwJA0_69dNWQkd4enpOtdRq1faWR0QXlm-2-qSAIkucdD4kbPoBH_oJAgAFo02wntElNA/exec'; // あなたのURLに置き換えて
+const DOGET_URL = 'https://script.google.com/macros/s/AKfycbzmuPLd6XMTImW0_y3gK7liC2vJuqhjSq7uih9LWFOlpLXa2p5nZOZHfF0bT2X-GlOicQ/exec'; // あなたのURLに置き換えて
 const TEMPLATE_FILE = 'index.template.html';
 const OUTPUT_FILE = 'index.html';
 
