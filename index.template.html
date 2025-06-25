@@ -221,7 +221,8 @@ function renderStocks() {
 
 // 初回データ読み込み
 fetchStockData();
-
+renderStocks();
+  
 function deleteStock(index) {
   const stockList = JSON.parse(localStorage.getItem("myStockList") || "[]");
   if (index >= 0 && index < stockList.length) {
