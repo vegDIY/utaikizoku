@@ -6,6 +6,6 @@
     "node-fetch": "^3.3.2"
   },
   "scripts": {
-    "update": "node update.js"
+    "update": "node update.cjs"
   }
 }
