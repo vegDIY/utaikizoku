@@ -80,169 +80,142 @@
 </script>
 
 <script>
-let currentSortKey = "";
-let currentSortOrder = "asc";
-let stockDataCache = null;
+  let stockDataCache = null;
 
-function validateCode(input) {
-  input.value = input.value.toUpperCase().replace(/[^A-Z0-9.]/g, "");
-}
-
-function fetchStockData() {
-  try {
-    const rawJson = document.getElementById("stock-data-json").textContent;
-    stockDataCache = JSON.parse(rawJson);
-    const datalist = document.getElementById("codeList");
-    datalist.innerHTML = "";
-    for (const code in stockDataCache) {
-      const name = stockDataCache[code].name || "";
-      const option = document.createElement("option");
-      option.value = code;
-      option.text = `${code} - ${name}`;
-      datalist.appendChild(option);
-    }
-  } catch (e) {
-    alert("埋め込み株価データの読み込みに失敗しました。");
-  }
-}
-
-function addStock() {
-  const code = document.getElementById("code").value.trim().toUpperCase();
-  const amount = parseInt(document.getElementById("amount").value);
-  const price = parseFloat(document.getElementById("price").value);
-
-  if (!code || isNaN(amount) || isNaN(price)) {
-    alert("正しく入力してください。");
-    return;
+  function validateCode(input) {
+    input.value = input.value.toUpperCase().replace(/[^A-Z0-9.]/g, "");
   }
 
-  if (!stockDataCache[code]) {
-    alert("銘柄コードが存在しません。");
-    return;
-  }
-
-  const stockList = JSON.parse(localStorage.getItem("myStockList") || "[]");
-  stockList.push({ code, amount, price });
-  localStorage.setItem("myStockList", JSON.stringify(stockList));
-
-  document.getElementById("code").value = "";
-  document.getElementById("amount").value = "";
-  document.getElementById("price").value = "";
-
-  renderStocks();
-}
-
-function renderStocks() {
-  const stockList = JSON.parse(localStorage.getItem("myStockList") || "[]");
-  const keyword = document.getElementById("search").value.trim().toUpperCase();
-  const filteredList = stockList.filter(item => item.code.includes(keyword));
-  const container = document.getElementById("stockList");
-  const summary = document.getElementById("summary");
-
-  if (filteredList.length === 0) {
-    container.innerHTML = "<p>保有銘柄がありません。</p>";
-    summary.innerHTML = "";
-    return;
-  }
-
-  let processed = filteredList.map((item, index) => {
-    const info = stockDataCache[item.code] || {};
-    const current = parseFloat(info.price) || 0;
-    const name = info.name || "―";
-    const dividend = info.dividend || 0;
-    const benefit = info.shareholderBenefits || "―";
-    const diff = (current - item.price) * item.amount;
-    const rate = current && item.price ? ((current - item.price) / item.price * 100) : 0;
-    return {
-      ...item, name, current, dividend, benefit, diff, rate, index
-    };
-  });
-
-  if (currentSortKey) {
-    processed.sort((a, b) => {
-      const valA = a[currentSortKey];
-      const valB = b[currentSortKey];
-      if (typeof valA === 'string') {
-        return currentSortOrder === "asc" ? valA.localeCompare(valB) : valB.localeCompare(valA);
+  function fetchStockData() {
+    try {
+      const rawJson = document.getElementById("stock-data-json").textContent;
+      stockDataCache = JSON.parse(rawJson);
+      const datalist = document.getElementById("codeList");
+      datalist.innerHTML = "";
+      for (const code in stockDataCache) {
+        const name = stockDataCache[code].name || "";
+        const option = document.createElement("option");
+        option.value = code;
+        option.text = `${code} - ${name}`;
+        datalist.appendChild(option);
       }
-      return currentSortOrder === "asc" ? valA - valB : valB - valA;
-    });
+    } catch (e) {
+      alert("📉 株価データの読み込みに失敗しました。");
+    }
   }
 
-  let html = `
-    <table>
-      <thead>
-        <tr>
-          <th onclick="sortBy('code')">コード</th>
-          <th onclick="sortBy('name')">名称</th>
-          <th onclick="sortBy('amount')">保有数</th>
-          <th onclick="sortBy('price')">取得単価</th>
-          <th onclick="sortBy('current')">現在値</th>
-          <th onclick="sortBy('dividend')">配当金</th>
-          <th onclick="sortBy('benefit')">優待</th>
-          <th onclick="sortBy('diff')">損益</th>
-          <th onclick="sortBy('rate')">損益率</th>
-          <th>操作</th>
-        </tr>
-      </thead>
-      <tbody>
-  `;
+  function getBenefitForAmount(benefitList, amount) {
 
-  let totalHold = 0, totalEval = 0, totalDividend = 0;
+    // Array.isArray() を使わず、Object.prototype.toString で配列か確認
+    if (Object.prototype.toString.call(benefitList) !== "[object Array]") return "―";
+    let result = "―";
+    for (const [required, value] of benefitList) {
+      if (amount >= required) result = `${value}円`;
+    }
+    return result;
+  }
 
-  processed.forEach(item => {
-    const profitColor = item.diff > 0 ? "profit" : (item.diff < 0 ? "loss" : "");
-    const diffStr = isNaN(item.diff) ? "―" : (item.diff >= 0 ? "+" : "") + item.diff.toLocaleString("ja-JP") + "円";
-    const rateStr = isNaN(item.rate) ? "―" : item.rate.toFixed(2) + "%";
+  function renderStocks() {
+    const stockList = JSON.parse(localStorage.getItem("myStockList") || "[]");
+    const keyword = document.getElementById("search").value.trim().toUpperCase();
+    const filtered = stockList.filter(item => item.code.includes(keyword));
+    const container = document.getElementById("stockList");
 
-    html += `
-      <tr>
-        <td>${item.code}</td>
-        <td>${item.name}</td>
-        <td>${item.amount}</td>
-        <td>${item.price.toLocaleString("ja-JP")}円</td>
-        <td>${item.current.toLocaleString("ja-JP")}円</td>
-        <td>${item.dividend}</td>
-        <td>${item.benefit}</td>
-        <td class="${profitColor}">${diffStr}</td>
-        <td class="${profitColor}">${rateStr}</td>
-        <td><button onclick="deleteStock(${item.index})">削除</button></td>
-      </tr>
-    `;
+    let html = `
+      <table class="table-auto w-full text-sm">
+        <thead>
+          <tr class="bg-gray-200">
+            <th class="px-2 py-1">コード</th>
+            <th class="px-2 py-1">銘柄名</th>
+            <th class="px-2 py-1">保有数</th>
+            <th class="px-2 py-1">取得単価</th>
+            <th class="px-2 py-1">現在値</th>
+            <th class="px-2 py-1">配当金</th>
+            <th class="px-2 py-1">優待</th>
+            <th class="px-2 py-1">削除</th>
+          </tr>
+        </thead>
+        <tbody>`;
 
-    totalHold += item.amount * item.price;
-    totalEval += item.amount * item.current;
-    totalDividend += item.dividend * item.amount;
-  });
+    filtered.forEach((item, i) => {
+      const info = stockDataCache[item.code] || {};
+      html += `
+        <tr class="border-t">
+          <td class="px-2 py-1">${item.code}</td>
+          <td class="px-2 py-1">${info.name || "―"}</td>
+          <td class="px-2 py-1">${item.amount}</td>
+          <td class="px-2 py-1">${item.price.toLocaleString()}円</td>
+          <td class="px-2 py-1">${info.price ? info.price.toLocaleString() + "円" : "―"}</td>
+          <td class="px-2 py-1">${info.dividend || "―"}</td>
+          <td class="px-2 py-1">${getBenefitForAmount(info.shareholderBenefits, item.amount)}</td>
+          <td class="px-2 py-1"><button onclick="deleteStock(${i})" class="text-red-500 hover:underline">削除</button></td>
+        </tr>`;
+    });
 
-  html += "</tbody></table>";
-  container.innerHTML = html;
+    html += "</tbody></table>";
+    container.innerHTML = html;
+  }
 
-  const totalProfit = totalEval - totalHold;
-  const profitColor = totalProfit > 0 ? "green" : (totalProfit < 0 ? "red" : "black");
+  function addStock() {
+    const code = document.getElementById("code").value.trim().toUpperCase();
+    const amount = parseInt(document.getElementById("amount").value);
+    const price = parseFloat(document.getElementById("price").value);
+    if (!code || isNaN(amount) || isNaN(price)) {
+      alert("⚠️ 入力内容が正しくありません。");
+      return;
+    }
+    if (!stockDataCache || !stockDataCache[code]) {
+      alert("⚠️ 銘柄コードが存在しません。");
+      return;
+    }
+    const stockList = JSON.parse(localStorage.getItem("myStockList") || "[]");
+    stockList.push({ code, amount, price });
+    localStorage.setItem("myStockList", JSON.stringify(stockList));
+    document.getElementById("code").value = "";
+    document.getElementById("amount").value = "";
+    document.getElementById("price").value = "";
+    renderStocks();
+  }
 
-  summary.innerHTML = `
-    <p>
-      🔸 保有総額: ${totalHold.toLocaleString()}円｜
-      🔸 評価額: ${totalEval.toLocaleString()}円｜
-      🔸 合計損益: <strong style="color:${profitColor}">${(totalProfit >= 0 ? "+" : "") + totalProfit.toLocaleString()}円</strong>｜
-      🔸 年間配当見込: ${totalDividend.toLocaleString()}円
-    </p>
-  `;
-}
-
-// 初回データ読み込み
-fetchStockData();
-renderStocks();
-  
-function deleteStock(index) {
-  const stockList = JSON.parse(localStorage.getItem("myStockList") || "[]");
-  if (index >= 0 && index < stockList.length) {
+  function deleteStock(index) {
+    const stockList = JSON.parse(localStorage.getItem("myStockList") || "[]");
     stockList.splice(index, 1);
     localStorage.setItem("myStockList", JSON.stringify(stockList));
     renderStocks();
   }
-}
+
+  function exportCSV() {
+    const stockList = JSON.parse(localStorage.getItem("myStockList") || "[]");
+    const csv = stockList.map(item => `${item.code},${item.amount},${item.price}`).join("\n");
+    const blob = new Blob(["code,amount,price\n" + csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "myStockList.csv";
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  function importCSV(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      const lines = reader.result.split("\n").slice(1);
+      const stockList = lines
+        .map(line => {
+          const [code, amount, price] = line.split(",");
+          return { code: code.trim(), amount: parseInt(amount), price: parseFloat(price) };
+        })
+        .filter(item => item.code && !isNaN(item.amount) && !isNaN(item.price));
+      localStorage.setItem("myStockList", JSON.stringify(stockList));
+      renderStocks();
+    };
+    reader.readAsText(file);
+  }
+
+  fetchStockData();
+  renderStocks();
 </script>
 </body>
 </html>
