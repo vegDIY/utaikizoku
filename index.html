@@ -26547,6 +26547,14 @@
   }
 
   function getBenefitForAmount(benefitList, amount) {
+    // 文字列であればパース
+    if (typeof benefitsArray === "string") {
+      try {
+        benefitsArray = JSON.parse(benefitsArray);
+      } catch {
+        return "―";
+      }
+    }
     if (!Array.isArray(benefitList)) return "―";
     let result = "―";
     for (const [required, value] of benefitList) {
