@@ -1,24 +1,13 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>株式管理ツール</title>
+  <link rel="manifest" href="manifest.json" />
+  <meta name="theme-color" content="#ffffff" />
+  <link rel="icon" href="icon-192.png" />
   <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
-  <style>
-    input, button, label, select, datalist { margin: 5px; }
-    .profit { color: green; }
-    .loss { color: red; }
-    table { border-collapse: collapse; min-width: 800px; width: 100%; }
-    th, td { border: 1px solid #ccc; padding: 8px; text-align: center; }
-    th { background-color: #f0f0f0; cursor: pointer; }
-    .profit { color: green; }
-    .loss { color: red; }
-  </style>
-
-  <link rel="manifest" href="manifest.json">
-  <meta name="theme-color" content="#ffffff">
-  <link rel="icon" href="icon-192.png">
   <script>
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('service-worker.js')
@@ -26,46 +15,46 @@
         .catch(err => console.error("❌ Service Worker 登録失敗", err));
     }
   </script>
-  
 </head>
 <body class="bg-gray-50 text-gray-800 p-4">
 
-<h1 class="text-2xl font-bold mb-4">📈 株式管理ツール</h1>
+  <h1 class="text-2xl font-bold mb-4">📈 株式管理ツール</h1>
 
-<div class="space-y-4">
-  <div class="flex flex-wrap items-center gap-2">
-    <input list="codeList" type="text" id="code" placeholder="銘柄コード (例: 7203.T)" oninput="validateCode(this)" class="input input-bordered px-2 py-1 border rounded">
-    <datalist id="codeList"></datalist>
-    <input list="amountList" type="number" id="amount" placeholder="保有数" min="1" class="input input-bordered px-2 py-1 border rounded">
-    <datalist id="amountList">
-      <script>
-        for (let i = 100; i <= 2000; i += 100) {
-          document.write(`<option value="${i}">`);
-        }
-      </script>
-    </datalist>
-    <input type="number" id="price" placeholder="取得単価 (円)" class="input input-bordered px-2 py-1 border rounded">
-    <button onclick="addStock()" class="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600">追加</button>
-  </div>
+  <div class="space-y-4">
+    <div class="flex flex-wrap items-center gap-2">
+      <input list="codeList" type="text" id="code" placeholder="銘柄コード (例: 7203.T)" oninput="validateCode(this)" class="px-2 py-1 border rounded">
+      <datalist id="codeList"></datalist>
 
-  <div>
+      <input list="amountList" type="number" id="amount" placeholder="保有数" min="1" class="px-2 py-1 border rounded">
+      <datalist id="amountList">
+        <script>
+          for (let i = 100; i <= 2000; i += 100) {
+            document.write(`<option value="${i}">`);
+          }
+        </script>
+      </datalist>
+
+      <input type="number" id="price" placeholder="取得単価 (円)" class="px-2 py-1 border rounded">
+      <button onclick="addStock()" class="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600">追加</button>
+    </div>
+
     <input type="text" id="search" placeholder="🔍 銘柄検索" oninput="renderStocks()" class="w-full max-w-xs px-2 py-1 border rounded">
+
+    <div class="flex items-center gap-3">
+      <button onclick="exportCSV()" class="bg-green-500 text-white px-3 py-1 rounded hover:bg-green-600">📤 CSVエクスポート</button>
+      <input type="file" id="csvFile" accept=".csv" onchange="importCSV(event)" class="block">
+      <label for="csvFile" class="text-sm">📥 CSVインポート</label>
+    </div>
   </div>
 
-  <div class="flex items-center gap-3">
-    <button onclick="exportCSV()" class="bg-green-500 text-white px-3 py-1 rounded hover:bg-green-600">📤 CSVエクスポート</button>
-    <input type="file" id="csvFile" accept=".csv" onchange="importCSV(event)" class="block">
-    <label for="csvFile" class="text-sm">📥 CSVインポート</label>
+  <hr class="my-6">
+
+  <h2 class="text-xl font-semibold mb-2">📋 保有銘柄一覧</h2>
+  <div class="overflow-x-auto">
+    <div id="stockList" class="w-full"></div>
   </div>
-</div>
 
-<hr class="my-6">
-
-<h2 class="text-xl font-semibold mb-2">📋 保有銘柄一覧</h2>
-<div class="overflow-x-auto">
-  <div id="stockList" class="w-full"></div>
-</div>
-<div id="summary" class="mt-4 text-sm"></div>
+  <div id="summary" class="mt-4 text-sm"></div>
 
 <!-- doGet()の結果を1日1回手動で貼り付けるJSONデータ -->
 <script id="stock-data-json" type="application/json">
@@ -26528,169 +26517,140 @@
 </script>
 
 <script>
-let currentSortKey = "";
-let currentSortOrder = "asc";
-let stockDataCache = null;
+  let stockDataCache = null;
 
-function validateCode(input) {
-  input.value = input.value.toUpperCase().replace(/[^A-Z0-9.]/g, "");
-}
-
-function fetchStockData() {
-  try {
-    const rawJson = document.getElementById("stock-data-json").textContent;
-    stockDataCache = JSON.parse(rawJson);
-    const datalist = document.getElementById("codeList");
-    datalist.innerHTML = "";
-    for (const code in stockDataCache) {
-      const name = stockDataCache[code].name || "";
-      const option = document.createElement("option");
-      option.value = code;
-      option.text = `${code} - ${name}`;
-      datalist.appendChild(option);
-    }
-  } catch (e) {
-    alert("埋め込み株価データの読み込みに失敗しました。");
-  }
-}
-
-function addStock() {
-  const code = document.getElementById("code").value.trim().toUpperCase();
-  const amount = parseInt(document.getElementById("amount").value);
-  const price = parseFloat(document.getElementById("price").value);
-
-  if (!code || isNaN(amount) || isNaN(price)) {
-    alert("正しく入力してください。");
-    return;
+  function validateCode(input) {
+    input.value = input.value.toUpperCase().replace(/[^A-Z0-9.]/g, "");
   }
 
-  if (!stockDataCache[code]) {
-    alert("銘柄コードが存在しません。");
-    return;
-  }
-
-  const stockList = JSON.parse(localStorage.getItem("myStockList") || "[]");
-  stockList.push({ code, amount, price });
-  localStorage.setItem("myStockList", JSON.stringify(stockList));
-
-  document.getElementById("code").value = "";
-  document.getElementById("amount").value = "";
-  document.getElementById("price").value = "";
-
-  renderStocks();
-}
-
-function renderStocks() {
-  const stockList = JSON.parse(localStorage.getItem("myStockList") || "[]");
-  const keyword = document.getElementById("search").value.trim().toUpperCase();
-  const filteredList = stockList.filter(item => item.code.includes(keyword));
-  const container = document.getElementById("stockList");
-  const summary = document.getElementById("summary");
-
-  if (filteredList.length === 0) {
-    container.innerHTML = "<p>保有銘柄がありません。</p>";
-    summary.innerHTML = "";
-    return;
-  }
-
-  let processed = filteredList.map((item, index) => {
-    const info = stockDataCache[item.code] || {};
-    const current = parseFloat(info.price) || 0;
-    const name = info.name || "―";
-    const dividend = info.dividend || 0;
-    const benefit = info.shareholderBenefits || "―";
-    const diff = (current - item.price) * item.amount;
-    const rate = current && item.price ? ((current - item.price) / item.price * 100) : 0;
-    return {
-      ...item, name, current, dividend, benefit, diff, rate, index
-    };
-  });
-
-  if (currentSortKey) {
-    processed.sort((a, b) => {
-      const valA = a[currentSortKey];
-      const valB = b[currentSortKey];
-      if (typeof valA === 'string') {
-        return currentSortOrder === "asc" ? valA.localeCompare(valB) : valB.localeCompare(valA);
+  function fetchStockData() {
+    try {
+      const rawJson = document.getElementById("stock-data-json").textContent;
+      stockDataCache = JSON.parse(rawJson);
+      const datalist = document.getElementById("codeList");
+      datalist.innerHTML = "";
+      for (const code in stockDataCache) {
+        const name = stockDataCache[code].name || "";
+        const option = document.createElement("option");
+        option.value = code;
+        option.text = `${code} - ${name}`;
+        datalist.appendChild(option);
       }
-      return currentSortOrder === "asc" ? valA - valB : valB - valA;
-    });
+    } catch (e) {
+      alert("📉 株価データの読み込みに失敗しました。");
+    }
   }
 
-  let html = `
-    <table>
-      <thead>
-        <tr>
-          <th onclick="sortBy('code')">コード</th>
-          <th onclick="sortBy('name')">名称</th>
-          <th onclick="sortBy('amount')">保有数</th>
-          <th onclick="sortBy('price')">取得単価</th>
-          <th onclick="sortBy('current')">現在値</th>
-          <th onclick="sortBy('dividend')">配当金</th>
-          <th onclick="sortBy('benefit')">優待</th>
-          <th onclick="sortBy('diff')">損益</th>
-          <th onclick="sortBy('rate')">損益率</th>
-          <th>操作</th>
-        </tr>
-      </thead>
-      <tbody>
-  `;
+  function getBenefitForAmount(benefitList, amount) {
+    if (!Array.isArray(benefitList)) return "―";
+    let result = "―";
+    for (const [required, value] of benefitList) {
+      if (amount >= required) result = `${value}円`;
+    }
+    return result;
+  }
 
-  let totalHold = 0, totalEval = 0, totalDividend = 0;
+  function renderStocks() {
+    const stockList = JSON.parse(localStorage.getItem("myStockList") || "[]");
+    const keyword = document.getElementById("search").value.trim().toUpperCase();
+    const filtered = stockList.filter(item => item.code.includes(keyword));
+    const container = document.getElementById("stockList");
 
-  processed.forEach(item => {
-    const profitColor = item.diff > 0 ? "profit" : (item.diff < 0 ? "loss" : "");
-    const diffStr = isNaN(item.diff) ? "―" : (item.diff >= 0 ? "+" : "") + item.diff.toLocaleString("ja-JP") + "円";
-    const rateStr = isNaN(item.rate) ? "―" : item.rate.toFixed(2) + "%";
+    let html = `
+      <table class="table-auto w-full text-sm">
+        <thead>
+          <tr class="bg-gray-200">
+            <th class="px-2 py-1">コード</th>
+            <th class="px-2 py-1">銘柄名</th>
+            <th class="px-2 py-1">保有数</th>
+            <th class="px-2 py-1">取得単価</th>
+            <th class="px-2 py-1">現在値</th>
+            <th class="px-2 py-1">配当金</th>
+            <th class="px-2 py-1">優待</th>
+            <th class="px-2 py-1">削除</th>
+          </tr>
+        </thead>
+        <tbody>`;
 
-    html += `
-      <tr>
-        <td>${item.code}</td>
-        <td>${item.name}</td>
-        <td>${item.amount}</td>
-        <td>${item.price.toLocaleString("ja-JP")}円</td>
-        <td>${item.current.toLocaleString("ja-JP")}円</td>
-        <td>${item.dividend}</td>
-        <td>${item.benefit}</td>
-        <td class="${profitColor}">${diffStr}</td>
-        <td class="${profitColor}">${rateStr}</td>
-        <td><button onclick="deleteStock(${item.index})">削除</button></td>
-      </tr>
-    `;
+    filtered.forEach((item, i) => {
+      const info = stockDataCache[item.code] || {};
+      html += `
+        <tr class="border-t">
+          <td class="px-2 py-1">${item.code}</td>
+          <td class="px-2 py-1">${info.name || "―"}</td>
+          <td class="px-2 py-1">${item.amount}</td>
+          <td class="px-2 py-1">${item.price.toLocaleString()}円</td>
+          <td class="px-2 py-1">${info.price ? info.price.toLocaleString() + "円" : "―"}</td>
+          <td class="px-2 py-1">${info.dividend || "―"}</td>
+          <td class="px-2 py-1">${getBenefitForAmount(info.shareholderBenefits, item.amount)}</td>
+          <td class="px-2 py-1"><button onclick="deleteStock(${i})" class="text-red-500 hover:underline">削除</button></td>
+        </tr>`;
+    });
 
-    totalHold += item.amount * item.price;
-    totalEval += item.amount * item.current;
-    totalDividend += item.dividend * item.amount;
-  });
+    html += "</tbody></table>";
+    container.innerHTML = html;
+  }
 
-  html += "</tbody></table>";
-  container.innerHTML = html;
+  function addStock() {
+    const code = document.getElementById("code").value.trim().toUpperCase();
+    const amount = parseInt(document.getElementById("amount").value);
+    const price = parseFloat(document.getElementById("price").value);
+    if (!code || isNaN(amount) || isNaN(price)) {
+      alert("⚠️ 入力内容が正しくありません。");
+      return;
+    }
+    if (!stockDataCache || !stockDataCache[code]) {
+      alert("⚠️ 銘柄コードが存在しません。");
+      return;
+    }
+    const stockList = JSON.parse(localStorage.getItem("myStockList") || "[]");
+    stockList.push({ code, amount, price });
+    localStorage.setItem("myStockList", JSON.stringify(stockList));
+    document.getElementById("code").value = "";
+    document.getElementById("amount").value = "";
+    document.getElementById("price").value = "";
+    renderStocks();
+  }
 
-  const totalProfit = totalEval - totalHold;
-  const profitColor = totalProfit > 0 ? "green" : (totalProfit < 0 ? "red" : "black");
-
-  summary.innerHTML = `
-    <p>
-      🔸 保有総額: ${totalHold.toLocaleString()}円｜
-      🔸 評価額: ${totalEval.toLocaleString()}円｜
-      🔸 合計損益: <strong style="color:${profitColor}">${(totalProfit >= 0 ? "+" : "") + totalProfit.toLocaleString()}円</strong>｜
-      🔸 年間配当見込: ${totalDividend.toLocaleString()}円
-    </p>
-  `;
-}
-
-// 初回データ読み込み
-fetchStockData();
-renderStocks();
-  
-function deleteStock(index) {
-  const stockList = JSON.parse(localStorage.getItem("myStockList") || "[]");
-  if (index >= 0 && index < stockList.length) {
+  function deleteStock(index) {
+    const stockList = JSON.parse(localStorage.getItem("myStockList") || "[]");
     stockList.splice(index, 1);
     localStorage.setItem("myStockList", JSON.stringify(stockList));
     renderStocks();
   }
-}
+
+  function exportCSV() {
+    const stockList = JSON.parse(localStorage.getItem("myStockList") || "[]");
+    const csv = stockList.map(item => `${item.code},${item.amount},${item.price}`).join("\n");
+    const blob = new Blob(["code,amount,price\n" + csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "myStockList.csv";
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  function importCSV(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      const lines = reader.result.split("\n").slice(1);
+      const stockList = lines
+        .map(line => {
+          const [code, amount, price] = line.split(",");
+          return { code: code.trim(), amount: parseInt(amount), price: parseFloat(price) };
+        })
+        .filter(item => item.code && !isNaN(item.amount) && !isNaN(item.price));
+      localStorage.setItem("myStockList", JSON.stringify(stockList));
+      renderStocks();
+    };
+    reader.readAsText(file);
+  }
+
+  fetchStockData();
+  renderStocks();
 </script>
 </body>
 </html>
