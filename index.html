@@ -26558,7 +26558,7 @@
     // Array.isArray() を使わず、Object.prototype.toString で配列か確認
      if (!Array.isArray(benefitsArray)) return "―";
     let result = "―";
-    for (const [required, value] of benefitList) {
+    for (const [required, value] of benefitsArray) {
       if (amount >= required) result = `${value}円`;
     }
     return result;
