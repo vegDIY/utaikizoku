@@ -2,14 +2,13 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>株式管理ツール</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
   <style>
-    body { font-family: sans-serif; padding: 20px; }
     input, button, label, select, datalist { margin: 5px; }
-    .table-wrapper {
-      overflow-x: auto;
-      margin-top: 20px;
-    }
+    .profit { color: green; }
+    .loss { color: red; }
     table { border-collapse: collapse; min-width: 800px; width: 100%; }
     th, td { border: 1px solid #ccc; padding: 8px; text-align: center; }
     th { background-color: #f0f0f0; cursor: pointer; }
@@ -29,37 +28,44 @@
   </script>
   
 </head>
-<body>
+<body class="bg-gray-50 text-gray-800 p-4">
 
-<h3>株式管理ツール</h3>
-<div>
-  <input list="codeList" type="text" id="code" placeholder="銘柄コード (例: 7203.T)" oninput="validateCode(this)">
-  <datalist id="codeList"></datalist>
-  <input list="amountList" type="number" id="amount" placeholder="保有数" min="1">
-  <datalist id="amountList">
-    <script>
-      for (let i = 100; i <= 2000; i += 100) {
-        document.write(`<option value="${i}">`);
-      }
-    </script>
-  </datalist>
-  <input type="number" id="price" placeholder="取得単価 (円)">
-  <button onclick="addStock()">追加</button>
-  <br><br>
-  <input type="text" id="search" placeholder="🔍 銘柄検索" oninput="renderStocks()">
-  <br><br>
-  <button onclick="exportCSV()">📤 CSVエクスポート</button>
-  <input type="file" id="csvFile" accept=".csv" onchange="importCSV(event)">
-  <label for="csvFile">📥 CSVインポート</label>
+<h1 class="text-2xl font-bold mb-4">📈 株式管理ツール</h1>
+
+<div class="space-y-4">
+  <div class="flex flex-wrap items-center gap-2">
+    <input list="codeList" type="text" id="code" placeholder="銘柄コード (例: 7203.T)" oninput="validateCode(this)" class="input input-bordered px-2 py-1 border rounded">
+    <datalist id="codeList"></datalist>
+    <input list="amountList" type="number" id="amount" placeholder="保有数" min="1" class="input input-bordered px-2 py-1 border rounded">
+    <datalist id="amountList">
+      <script>
+        for (let i = 100; i <= 2000; i += 100) {
+          document.write(`<option value="${i}">`);
+        }
+      </script>
+    </datalist>
+    <input type="number" id="price" placeholder="取得単価 (円)" class="input input-bordered px-2 py-1 border rounded">
+    <button onclick="addStock()" class="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600">追加</button>
+  </div>
+
+  <div>
+    <input type="text" id="search" placeholder="🔍 銘柄検索" oninput="renderStocks()" class="w-full max-w-xs px-2 py-1 border rounded">
+  </div>
+
+  <div class="flex items-center gap-3">
+    <button onclick="exportCSV()" class="bg-green-500 text-white px-3 py-1 rounded hover:bg-green-600">📤 CSVエクスポート</button>
+    <input type="file" id="csvFile" accept=".csv" onchange="importCSV(event)" class="block">
+    <label for="csvFile" class="text-sm">📥 CSVインポート</label>
+  </div>
 </div>
 
-<hr>
+<hr class="my-6">
 
-<h3>保有銘柄一覧</h3>
-<div class="table-wrapper">
-  <div id="stockList"></div>
+<h2 class="text-xl font-semibold mb-2">📋 保有銘柄一覧</h2>
+<div class="overflow-x-auto">
+  <div id="stockList" class="w-full"></div>
 </div>
-<div id="summary"></div>
+<div id="summary" class="mt-4 text-sm"></div>
 
 <!-- doGet()の結果を1日1回手動で貼り付けるJSONデータ -->
 <script id="stock-data-json" type="application/json">
