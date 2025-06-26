@@ -26549,7 +26549,7 @@
   function getBenefitForAmount(benefitList, amount) {
 
     // Array.isArray() を使わず、Object.prototype.toString で配列か確認
-    if (Object.prototype.toString.call(benefitsArray) !== "[object Array]") return "―";
+    if (Object.prototype.toString.call(benefitList) !== "[object Array]") return "―";
     let result = "―";
     for (const [required, value] of benefitList) {
       if (amount >= required) result = `${value}円`;
