@@ -26547,7 +26547,8 @@
   }
 
   function getBenefitForAmount(benefitList, amount) {
-    if (typeof benefitList === "string") {
+    let benefitsArray = benefitList;
+    if (typeof benefitsArray === "string") {
       try {
         benefitsArray = JSON.parse(benefitsArray);
       } catch (e) {
