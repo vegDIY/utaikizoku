@@ -10,7 +10,7 @@
       overflow-x: auto;
       margin-top: 20px;
     }
-    table { border-collapse: collapse; min-width: 800px; width: 100%; }
+    table { border-collapse: collapse; min-width: 1000px; width: 100%; }
     th, td { border: 1px solid #ccc; padding: 8px; text-align: center; }
     th { background-color: #f0f0f0; cursor: pointer; }
     .profit { color: green; }
@@ -27,7 +27,6 @@
         .catch(err => console.error("❌ Service Worker 登録失敗", err));
     }
   </script>
-  
 </head>
 <body>
 
@@ -122,38 +121,67 @@
     const container = document.getElementById("stockList");
 
     let html = `
-      <table class="table-auto w-full text-sm">
+      <table>
         <thead>
-          <tr class="bg-gray-200">
-            <th class="px-2 py-1">コード</th>
-            <th class="px-2 py-1">銘柄名</th>
-            <th class="px-2 py-1">保有数</th>
-            <th class="px-2 py-1">取得単価</th>
-            <th class="px-2 py-1">現在値</th>
-            <th class="px-2 py-1">配当利回り</th>
-            <th class="px-2 py-1">優待</th>
-            <th class="px-2 py-1">削除</th>
+          <tr>
+            <th>コード</th>
+            <th>銘柄名</th>
+            <th>保有数</th>
+            <th>取得単価</th>
+            <th>現在値</th>
+            <th>評価額</th>
+            <th>保有総額</th>
+            <th>損益</th>
+            <th>損益率</th>
+            <th>配当利回り</th>
+            <th>優待</th>
+            <th>削除</th>
           </tr>
         </thead>
         <tbody>`;
 
+    let totalProfit = 0;
+    let totalDividend = 0;
+    let totalEvaluation = 0;
+
     filtered.forEach((item, i) => {
       const info = stockDataCache[item.code] || {};
+      const currentPrice = info.price || 0;
+      const marketValue = currentPrice * item.amount;
+      const cost = item.price * item.amount;
+      const profit = marketValue - cost;
+      const profitRate = cost > 0 ? (profit / cost * 100).toFixed(2) : "―";
+      const dividend = info.dividend || 0;
+      const annualDividend = dividend * item.amount;
+      totalProfit += profit;
+      totalDividend += annualDividend;
+      totalEvaluation += marketValue;
+
       html += `
-        <tr class="border-t">
-          <td class="px-2 py-1">${item.code}</td>
-          <td class="px-2 py-1">${info.name || "―"}</td>
-          <td class="px-2 py-1">${item.amount}</td>
-          <td class="px-2 py-1">${item.price.toLocaleString()}円</td>
-          <td class="px-2 py-1">${info.price ? info.price.toLocaleString() + "円" : "―"}</td>
-          <td class="px-2 py-1">${info.dividend + "%" || "―"}</td>
-          <td class="px-2 py-1">${getBenefitForAmount(info.shareholderBenefits, item.amount) + "円" }</td>
-          <td class="px-2 py-1"><button onclick="deleteStock(${i})" class="text-red-500 hover:underline">削除</button></td>
+        <tr>
+          <td>${item.code}</td>
+          <td>${info.name || "―"}</td>
+          <td>${item.amount}</td>
+          <td>${item.price.toLocaleString()}円</td>
+          <td>${currentPrice ? currentPrice.toLocaleString() + "円" : "―"}</td>
+          <td>${marketValue.toLocaleString()}円</td>
+          <td>${cost.toLocaleString()}円</td>
+          <td class="${profit >= 0 ? 'profit' : 'loss'}">${profit.toLocaleString()}円</td>
+          <td class="${profit >= 0 ? 'profit' : 'loss'}">${profitRate}%</td>
+          <td>${dividend ? ((dividend / currentPrice) * 100).toFixed(2) + "%" : "―"}</td>
+          <td>${getBenefitForAmount(info.shareholderBenefits, item.amount)}</td>
+          <td><button onclick="deleteStock(${i})" class="text-red-500 hover:underline">削除</button></td>
         </tr>`;
     });
 
-    html += "</tbody></table>";
+    html += `</tbody></table>`;
+
     container.innerHTML = html;
+    document.getElementById("summary").innerHTML = `
+      <br>
+      <div><strong>合計損益:</strong> <span class="${totalProfit >= 0 ? 'profit' : 'loss'}">${totalProfit.toLocaleString()}円</span></div>
+      <div><strong>年間配当見込み:</strong> ${totalDividend.toLocaleString()}円</div>
+      <div><strong>評価額合計:</strong> ${totalEvaluation.toLocaleString()}円</div>`;
   }
 
   function addStock() {
