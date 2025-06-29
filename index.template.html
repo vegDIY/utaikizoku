@@ -146,8 +146,8 @@
           <td class="px-2 py-1">${item.amount}</td>
           <td class="px-2 py-1">${item.price.toLocaleString()}円</td>
           <td class="px-2 py-1">${info.price ? info.price.toLocaleString() + "円" : "―"}</td>
-          <td class="px-2 py-1">${info.dividend || "―"}</td>
-          <td class="px-2 py-1">${getBenefitForAmount(info.shareholderBenefits, item.amount)}</td>
+          <td class="px-2 py-1">${info.dividend + "%" || "―"}</td>
+          <td class="px-2 py-1">${getBenefitForAmount(info.shareholderBenefits, item.amount) + "円" }</td>
           <td class="px-2 py-1"><button onclick="deleteStock(${i})" class="text-red-500 hover:underline">削除</button></td>
         </tr>`;
     });
