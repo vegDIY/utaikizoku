@@ -152,7 +152,7 @@
       const profit = marketValue - cost;
       const profitRate = cost > 0 ? (profit / cost * 100).toFixed(2) : "―";
       const dividend = info.dividend || 0;
-      const annualDividend = dividend * item.amount;
+      const annualDividend = dividend * marketValue;
       totalProfit += profit;
       totalDividend += annualDividend;
       totalEvaluation += marketValue;
