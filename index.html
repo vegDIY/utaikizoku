@@ -4923,6 +4923,12 @@
     "shareholderBenefits": "",
     "price": 863
   },
+  "2928": {
+    "name": "ライザップG",
+    "dividend": "",
+    "shareholderBenefits": "",
+    "price": ""
+  },
   "2929": {
     "name": "ファーマフーズ",
     "dividend": 2.97,
@@ -26610,7 +26616,7 @@
           <td>${cost.toLocaleString()}円</td>
           <td class="${profit >= 0 ? 'profit' : 'loss'}">${profit.toLocaleString()}円</td>
           <td class="${profit >= 0 ? 'profit' : 'loss'}">${profitRate}%</td>
-          <td>${dividend ? ((dividend / currentPrice) * 100).toFixed(2) + "%" : "―"}</td>
+          <td>${dividend ? ((dividend).toFixed(2) + "%" : "―"}</td>
           <td>${getBenefitForAmount(info.shareholderBenefits, item.amount)}</td>
           <td><button onclick="deleteStock(${i})" class="text-red-500 hover:underline">削除</button></td>
         </tr>`;
