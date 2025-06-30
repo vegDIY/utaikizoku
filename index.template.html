@@ -48,7 +48,7 @@
   <input type="text" id="search" placeholder="🔍 銘柄検索" oninput="renderStocks()">
   <br><br>
   <button onclick="exportCSV()">📤 CSVエクスポート</button>
-  <input type="file" id="csvFile" accept=".csv" onchange="importCSV(event)">
+  <input type="file" id="csvFile" onchange="importCSV(event)">
   <label for="csvFile">📥 CSVインポート</label>
 </div>
 
@@ -227,6 +227,13 @@
   function importCSV(event) {
     const file = event.target.files[0];
     if (!file) return;
+    
+    // 拡張子チェック（念のため）
+    if (!file.name.endsWith(".csv")) {
+        alert("CSVファイルを選択してください。");
+        return;
+    }
+
     const reader = new FileReader();
     reader.onload = () => {
       const lines = reader.result.split("\n").slice(1);
