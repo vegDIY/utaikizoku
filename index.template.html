@@ -80,6 +80,8 @@
 
 <script>
   let stockDataCache = null;
+  let sortColumn = null;
+  let sortAsc = true;
 
   function validateCode(input) {
     input.value = input.value.toUpperCase().replace(/[^A-Z0-9.]/g, "");
@@ -126,17 +128,25 @@
   function renderStocks() {
     const stockList = JSON.parse(localStorage.getItem("myStockList") || "[]");
     const keyword = document.getElementById("search").value.trim().toUpperCase();
-    const filtered = stockList.filter(item => item.code.includes(keyword));
-    const container = document.getElementById("stockList");
+    let filtered = stockList.filter(item => item.code.includes(keyword));
 
+    if (sortColumn) {
+      filtered.sort((a, b) => {
+        const valA = a[sortColumn];
+        const valB = b[sortColumn];
+        return sortAsc ? valA - valB : valB - valA;
+      });
+    }
+
+    const container = document.getElementById("stockList");
     let html = `
       <table>
         <thead>
           <tr>
-            <th>コード</th>
+            <th onclick="setSort('code')">コード</th>
             <th>銘柄名</th>
-            <th>保有数</th>
-            <th>取得単価</th>
+            <th onclick="setSort('amount')">保有数</th>
+            <th onclick="setSort('price')">取得単価</th>
             <th>現在値</th>
             <th>評価額</th>
             <th>保有総額</th>
@@ -191,6 +201,16 @@
       <div><strong>合計損益:</strong> <span class="${totalProfit >= 0 ? 'profit' : 'loss'}">${totalProfit.toLocaleString()}円</span></div>
       <div><strong>年間配当見込み:</strong> ${totalDividend.toLocaleString()}円</div>
       <div><strong>評価額合計:</strong> ${totalEvaluation.toLocaleString()}円</div>`;
+  }
+
+  function setSort(column) {
+    if (sortColumn === column) {
+      sortAsc = !sortAsc;
+    } else {
+      sortColumn = column;
+      sortAsc = true;
+    }
+    renderStocks();
   }
 
   function addStock() {
