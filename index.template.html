@@ -126,7 +126,7 @@
   }
 
   function renderStocks() {
-    const stockList = JSON.parse(localStorage.getItem("myStockList") || "[]");
+    let stockList = JSON.parse(localStorage.getItem("myStockList") || "[]");
     const keyword = document.getElementById("search").value.trim().toUpperCase();
     let filtered = stockList.filter(item => item.code.includes(keyword));
 
@@ -134,7 +134,7 @@
       filtered.sort((a, b) => {
         const valA = a[sortColumn];
         const valB = b[sortColumn];
-        return sortAsc ? valA - valB : valB - valA;
+        return sortAsc ? (valA > valB ? 1 : -1) : (valA < valB ? 1 : -1);
       });
     }
 
@@ -163,7 +163,8 @@
     let totalDividend = 0;
     let totalEvaluation = 0;
 
-    filtered.forEach((item, i) => {
+    filtered.forEach((item) => {
+      const index = stockList.findIndex(s => s.code === item.code && s.amount === item.amount && s.price === item.price);
       const info = stockDataCache[item.code] || {};
       const currentPrice = info.price || 0;
       const marketValue = currentPrice * item.amount;
@@ -189,7 +190,7 @@
           <td class="${profit >= 0 ? 'profit' : 'loss'}">${profitRate}%</td>
           <td>${dividend ? (dividend) + "%" : "―"}</td>
           <td>${getBenefitForAmount(info.shareholderBenefits, item.amount)}</td>
-          <td><button onclick="deleteStock(${i})" class="text-red-500 hover:underline">削除</button></td>
+          <td><button onclick="deleteStockAtIndex(${index})" class="text-red-500 hover:underline">削除</button></td>
         </tr>`;
     });
 
@@ -236,11 +237,13 @@
     renderStocks();
   }
 
-  function deleteStock(index) {
+  function deleteStockAtIndex(index) {
     const stockList = JSON.parse(localStorage.getItem("myStockList") || "[]");
-    stockList.splice(index, 1);
-    localStorage.setItem("myStockList", JSON.stringify(stockList));
-    renderStocks();
+    if (index > -1) {
+      stockList.splice(index, 1);
+      localStorage.setItem("myStockList", JSON.stringify(stockList));
+      renderStocks();
+    }
   }
 
   function exportCSV() {
